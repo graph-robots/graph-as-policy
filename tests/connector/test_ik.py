@@ -50,7 +50,7 @@ def _curobo_available() -> bool:
 
 
 _CUROBO_SKIP_REASON = (
-    "curobo bundle not importable — install with `uv sync --extra grocery` "
+    "curobo bundle not importable — install with `CUDA_HOME=/usr/local/cuda uv run gap skills install curobo` "
     "(needs CUDA + nvidia-curobo) or skip the cuRobo backend tests."
 )
 
@@ -213,7 +213,7 @@ def curobo_backend():
 
 @pytestmark_curobo
 def test_curobo_solve_ik_home_pose(robot, curobo_backend):
-    """cuRobo's IK (via plan_to_pose endpoint) reaches the Franka home pose."""
+    """cuRobo's InverseKinematics reaches the Franka home pose from its own seed."""
     target_pos, target_wxyz = _fk_panda_hand(robot, _HOME)
     joints = curobo_backend.solve_ik(
         make_pose(target_pos, target_wxyz), seed_joints=list(_HOME)

@@ -22,7 +22,7 @@ key-by-key reference.
 ## Run it
 
 ```bash
-CUDA_HOME=/usr/local/cuda uv sync --extra grocery
+uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo
 export OPENROUTER_API_KEY=...    # codegen + VLM (or vertex)
 MUJOCO_GL=egl uv run gap benchmark examples/benchmark/smoke.yaml
 ```

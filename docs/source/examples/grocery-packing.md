@@ -97,7 +97,7 @@ failure.
 ## Run it
 
 ```bash
-CUDA_HOME=/usr/local/cuda uv sync --extra grocery
+uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo
 uv run gap skills check --download
 
 # Runs against the VAB pack-all suite; a run video is recorded by default

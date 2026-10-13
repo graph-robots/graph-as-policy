@@ -29,7 +29,7 @@ do not need to be installed into Claude Code.
 git clone --recurse-submodules https://github.com/graph-robots/graph-as-policy.git
 git clone https://github.com/graph-robots/open-robot-skills.git   # side-by-side
 cd graph-as-policy
-uv sync --extra quickstart            # engine + sim + perception bundles
+uv sync && uv run gap skills install sam3 grounding-dino geometry            # engine + sim + perception bundles
 uv run gap skills check --download    # verify bundles + prefetch weights (~3.5 GB)
 ```
 

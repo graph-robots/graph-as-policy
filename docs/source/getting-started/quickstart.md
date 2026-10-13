@@ -37,7 +37,7 @@ downloads ~3.5 GB of model weights, and the gated SAM3 weights are in
 this quickstart's perception path — so set `HF_TOKEN` first; see
 [Model weights](installation.md#model-weights). The closing packing
 segment (minute 12–15) additionally needs the CuRobo planning stack:
-`CUDA_HOME=/usr/local/cuda uv sync --extra grocery`.
+`uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo`.
 :::
 
 ## Minute 0–6: run the quickstart graph
@@ -160,7 +160,7 @@ confirms every grocery item is in the basket.
 </figure>
 
 ```bash
-CUDA_HOME=/usr/local/cuda uv sync --extra grocery   # one-time: adds CuRobo planning
+uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo   # one-time: adds CuRobo planning
 
 MUJOCO_GL=egl uv run gap run examples/grocery_packing/packing_graph \
   --sim libero_object_packing/0

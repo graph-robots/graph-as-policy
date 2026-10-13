@@ -89,7 +89,7 @@ exist in the live CLI parser:
 
 - **Bootstrap** — start every session with `gap check` (or
   `gap check --format json` for machine-readable decisions); set up from
-  scratch with `git clone --recurse-submodules`, `uv sync --extra quickstart`,
+  scratch with `git clone --recurse-submodules`, `uv sync && uv run gap skills install sam3 grounding-dino geometry`,
   and `gap skills check --download` (runs each bundle's optional `prefetch()`
   hook; bundles without one download weights lazily at first model call).
   Known install gotchas (submodules, `CUDA_HOME`, `MUJOCO_GL=egl`) and the

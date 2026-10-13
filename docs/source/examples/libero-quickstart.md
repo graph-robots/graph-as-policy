@@ -32,7 +32,7 @@ From the GaP checkout, with [open-robot-skills](gh-skills:.) cloned next to
 it (see [Installation](../getting-started/installation.md)):
 
 ```bash
-uv sync --extra quickstart            # engine + LIBERO sim + perception deps
+uv sync && uv run gap skills install sam3 grounding-dino geometry            # engine + LIBERO sim + perception deps
 uv run gap skills check --download    # validate every bundle (PASS/WARN/FAIL)
 export OPENROUTER_API_KEY=...         # VLM provider — alternatives below
 
@@ -136,7 +136,7 @@ To run the planner variant, install CuRobo first (CUDA build), then point
 `gap run` at it:
 
 ```bash
-CUDA_HOME=/usr/local/cuda uv sync --extra grocery
+uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo
 MUJOCO_GL=egl uv run gap run examples/libero_quickstart/graph_planner \
   --sim libero_object_all_variance/0
 ```

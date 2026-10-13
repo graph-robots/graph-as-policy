@@ -16,7 +16,7 @@ modes: seed `i` maps to the same LIBERO initial state in every cell.
 :::{note} Requirements
 Linux + NVIDIA GPU with EGL headless rendering (`MUJOCO_GL=egl`), an LLM API
 key (OpenRouter — the default OpenAI-compatible provider — or Vertex), and the `grocery` extra for the
-benchmark families (`CUDA_HOME=/usr/local/cuda uv sync --extra grocery` — they
+benchmark families (`uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo` — they
 plan with CuRobo). The `llm_plus_policy` / `policy_only` modes additionally
 need a running VLA policy server (see [Learned Policies](policies.md)).
 :::

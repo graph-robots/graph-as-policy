@@ -14,7 +14,7 @@ exit non-zero when a cell falls below the config's `gate_threshold`.
 ```bash
 # add --extra vertex: the configs below pin the vertex provider, whose SDK
 # (google-genai) is engine-side for graph generation
-CUDA_HOME=/usr/local/cuda uv sync --extra grocery --extra vertex
+uv sync --extra vertex && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo
 uv run gap skills check --download
 
 # the 20-trial smoke (tasks 0-1)

@@ -92,7 +92,7 @@ is written.
 
 ## Execute it
 
-Same requirements as the quickstart (`uv sync --extra quickstart` with
+Same requirements as the quickstart (`uv sync && uv run gap skills install sam3 grounding-dino geometry` with
 downloaded weights + a VLM credential):
 
 ```bash

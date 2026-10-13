@@ -308,11 +308,29 @@ class WorkflowExecutor:
         self._initialize_trace_graph()
         self.trace.copy_workflow(self.workflow_dir)
 
-        # The observation stream starts only when the constructor was
-        # given a poll fn (the connector's ``get_observation``). Workflow
-        # meta override beats env var; fall back to the constructor's hz.
+        # The observation stream starts only when the constructor was given a
+        # poll fn (the connector's ``get_observation``) **and the workflow
+        # actually reads one**. Almost every connector has a ``get_observation``,
+        # so the poll fn alone started a background poller for every graph --
+        # including the great majority that never bind the stream.
+        #
+        # On a single world that is a wasted picture now and then. On a wave it
+        # is the whole clock: the poller asks for an observation, the fleet
+        # answers it with a render of every world and every camera, and because
+        # the fleet steps only when every world is parked, that render lands
+        # between every pair of steps. Profiled on a twelve-world surface_prep
+        # wave: 78% of the wall (3069 s of 3920 s) was the barrier held with the
+        # fleet thread inside `render_worlds`, 119 of 119 samples, two thirds of
+        # those in the device-to-host copy -- for a graph whose text contains no
+        # reference to `observation_stream` at all. Measured: render 340 ms
+        # against a 36 ms step, and a state-only observation costs 0.00 ms.
+        #
+        # It also flattened the point of batching: per-episode cost was 31/27/31
+        # ms at 4/6/12 worlds with the render, and 6.6/4.0/3.0 without it.
+        #
+        # Workflow meta override beats env var; fall back to the constructor's hz.
         # Visual-servo loops bump this to match the servo update_hz.
-        if self.observation_poll_fn is not None:
+        if self.observation_poll_fn is not None and self._reads_observation_stream():
             hz_str = (
                 self.workflow.meta.get("observation_stream_hz")
                 or os.environ.get("GAP_OBSERVATION_STREAM_HZ", "")
@@ -992,6 +1010,38 @@ class WorkflowExecutor:
                 )
             bound[in_name] = value
         return bound
+
+    def _reads_observation_stream(self) -> bool:
+        """Whether any node in this workflow binds the observation stream.
+
+        A node reads it by naming :data:`OBSERVATION_STREAM_INPUT_NAME` among
+        its inputs, or a subgraph by declaring it as one of its own -- both are
+        checked, because a subgraph's binding is what its nodes then resolve
+        against. Streaming nodes are included: a ``streaming`` node is exactly
+        the kind that wants a live feed.
+
+        Conservative by construction: anything that mentions the name at all
+        keeps the poller. The cost of a false positive is the status quo; the
+        cost of a false negative is a graph that silently reads a stream nobody
+        is filling, so the check errs toward starting it.
+        """
+        name = OBSERVATION_STREAM_INPUT_NAME
+        if name in (self.initial_inputs or {}):
+            return True
+        for node in self.workflow.nodes.values():
+            if name in (getattr(node, "inputs", None) or {}):
+                return True
+            if getattr(node, "streaming", False):
+                return True
+        for sg in self.workflow.subgraphs.values():
+            if name in (getattr(sg, "inputs", None) or {}):
+                return True
+            for node in sg.nodes.values():
+                if name in (getattr(node, "inputs", None) or {}):
+                    return True
+                if getattr(node, "streaming", False):
+                    return True
+        return False
 
     def _lookup_cross_subgraph_output(self, name: str) -> Any | None:
         if name == OBSERVATION_STREAM_INPUT_NAME and self.observation_stream is not None:

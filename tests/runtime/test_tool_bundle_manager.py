@@ -20,9 +20,11 @@ from gap_core.tools._registry import RpcAdapter
 from gap.runtime.tool_bundle_boot import (
     boot_tool_bundles,
     required_rpc_tool_bundles,
+    script_tool_names,
 )
 from gap.runtime.tool_bundle_manager import (
     ToolBundleManager,
+    shared_client_counts,
     ToolBundleStartupError,
 )
 
@@ -114,6 +116,91 @@ def fake_client_cls(monkeypatch):
 # ---------------------------------------------------------------------------
 # ToolBundleManager
 # ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _clean_shared_clients():
+    """The client cache is process-global by design, so a test that leaks a
+    reference would be read by the next one as a shared server."""
+    from gap.runtime import tool_bundle_manager as tbm
+
+    tbm._SHARED.clear()
+    yield
+    tbm._SHARED.clear()
+
+
+def _two_worlds(tmp_path, fake_client_cls):
+    """Two managers, two registries, one bundle -- a wave of two worlds."""
+    registry = _FakeSkillRegistry({
+        "sam3": _FakeSkillInfo(bundle_dir=tmp_path / "sam3", protocol="stdio-msgpack"),
+    })
+    return [
+        ToolBundleManager(skill_registry=registry, tool_registry=ToolRegistry())
+        for _ in range(2)
+    ]
+
+
+def test_two_worlds_share_one_server(fake_client_cls, tmp_path):
+    """The reason this exists. Twelve worlds booting twelve segmenters is
+    6.3 GiB of GPU each and an out-of-memory crash mid-wave; they are one
+    process and want one server."""
+    first, second = _two_worlds(tmp_path, fake_client_cls)
+    first.boot_all(["sam3"])
+    second.boot_all(["sam3"])
+    assert len(fake_client_cls) == 1, "a second world spawned a second subprocess"
+    assert shared_client_counts() == {"sam3": 2}
+    # Both registries dispatch, and to the same process.
+    assert first._managed["sam3"].client is second._managed["sam3"].client
+
+
+def test_the_server_outlives_the_first_world_to_finish(fake_client_cls, tmp_path):
+    """Worlds of a wave end at different steps. The first to call shutdown
+    must not close a server its neighbours are mid-call on."""
+    first, second = _two_worlds(tmp_path, fake_client_cls)
+    first.boot_all(["sam3"])
+    second.boot_all(["sam3"])
+    client = fake_client_cls[0]
+    first.shutdown_all()
+    assert not client.closed, "the first world to finish killed the shared server"
+    assert shared_client_counts() == {"sam3": 1}
+    second.shutdown_all()
+    assert client.closed
+    assert shared_client_counts() == {}
+
+
+def test_shutdown_stays_idempotent_when_shared(fake_client_cls, tmp_path):
+    """A double shutdown must not release a reference it does not hold."""
+    first, second = _two_worlds(tmp_path, fake_client_cls)
+    first.boot_all(["sam3"])
+    second.boot_all(["sam3"])
+    first.shutdown_all()
+    first.shutdown_all()
+    assert shared_client_counts() == {"sam3": 1}
+    assert not fake_client_cls[0].closed
+
+
+def test_a_different_environment_is_a_different_server(fake_client_cls, tmp_path):
+    """Two graphs asking for one bundle under different ``serving.env`` want
+    different processes; handing the second the first's would be a silent
+    wrong answer."""
+    one = ToolBundleManager(
+        skill_registry=_FakeSkillRegistry({
+            "sam3": _FakeSkillInfo(bundle_dir=tmp_path / "sam3",
+                                   protocol="stdio-msgpack", env={"GAP_SAM3_DEVICE": "cuda:0"}),
+        }),
+        tool_registry=ToolRegistry(),
+    )
+    two = ToolBundleManager(
+        skill_registry=_FakeSkillRegistry({
+            "sam3": _FakeSkillInfo(bundle_dir=tmp_path / "sam3",
+                                   protocol="stdio-msgpack", env={"GAP_SAM3_DEVICE": "cuda:1"}),
+        }),
+        tool_registry=ToolRegistry(),
+    )
+    one.boot_all(["sam3"])
+    two.boot_all(["sam3"])
+    assert len(fake_client_cls) == 2
+    assert shared_client_counts() == {"sam3": 1}
 
 
 def test_boot_registers_catalog_under_rpc_transport(fake_client_cls, tmp_path):
@@ -277,6 +364,99 @@ def test_required_rpc_tool_bundles_filters_by_protocol(tmp_path):
         # `sim.*` is a connector tool — never in the registry.
     })
     assert required_rpc_tool_bundles(wf_dir, registry) == {"sam3"}
+
+
+def _write_scripted_workflow(tmp_path: Path, script_body: str, *, skill: str = "generated") -> Path:
+    """A graph that names no real skill and does its work in its own Python.
+
+    The shape every self-authored policy has: one subgraph labelled
+    ``generated``, one script node, and every tool call inside the script.
+    """
+    wf = {
+        "version": 3,
+        "meta": {"name": "t"},
+        "nodes": {"m": {"type": "subgraph", "ref": "m"},
+                  "done": {"type": "end", "status": "success"}},
+        "edges": [["START", "m"]],
+        "conditional_edges": {"m": {"router_field": "exit",
+                                    "mapping": {"ok": "done"}}},
+        "subgraphs": {
+            "m": {
+                "skill": skill, "inputs": {}, "outputs": {},
+                "nodes": {"look": {"type": "script", "script": "scripts/look.py", "inputs": {}},
+                          "ok": {"type": "noop"}},
+                "edges": [["START", "look"], ["look", "ok"], ["ok", "END"]],
+                "conditional_edges": {},
+                "exit": {"router_field": None, "success_values": ["ok"]},
+            },
+        },
+    }
+    wfd = tmp_path / "wf"
+    (wfd / "scripts").mkdir(parents=True)
+    (wfd / "workflow.json").write_text(json.dumps(wf))
+    (wfd / "scripts" / "look.py").write_text(script_body)
+    return wfd
+
+
+def _sam3_only(tmp_path: Path):
+    return _FakeSkillRegistry({
+        "sam3": _FakeSkillInfo(bundle_dir=tmp_path / "sam3", protocol="stdio-msgpack"),
+    })
+
+
+def test_a_graph_that_only_calls_a_bundle_from_its_scripts_boots_it(tmp_path):
+    """The whole point. A subgraph labelled ``generated`` names no skill, so
+    such a graph showed nothing, booted nothing, and died at its first call
+    with ``Tool 'sam3.segment_text' not found`` -- three iterations of a
+    self-learning cell went into writing fallbacks around that."""
+    wf_dir = _write_scripted_workflow(
+        tmp_path,
+        "def run(ctx, **kw):\n"
+        "    return ctx.tool('sam3.segment_text', image=kw['rgb'], query='the white sponge')\n",
+    )
+    assert required_rpc_tool_bundles(wf_dir, _sam3_only(tmp_path)) == {"sam3"}
+
+
+def test_a_helper_beside_the_script_counts_too(tmp_path):
+    """A bundle booted for the node but not for the helper it imports is the
+    same failure one import deeper, so every ``*.py`` in the graph is read."""
+    wf_dir = _write_scripted_workflow(
+        tmp_path, "from .seg import find\n\ndef run(ctx, **kw):\n    return find(ctx)\n"
+    )
+    (wf_dir / "scripts" / "seg.py").write_text(
+        "def find(ctx):\n    return ctx.tool_call('sam3.segment_text', query='sponge')\n"
+    )
+    assert required_rpc_tool_bundles(wf_dir, _sam3_only(tmp_path)) == {"sam3"}
+
+
+def test_a_tool_name_that_is_not_a_call_boots_nothing(tmp_path):
+    """Reading a whole directory is only safe because a string literal in first
+    position of a call is the only thing that counts: prose about a tool, and a
+    name assembled at run time, start no subprocess."""
+    wf_dir = _write_scripted_workflow(
+        tmp_path,
+        "NAME = 'sam3.' + 'segment_text'\n\n"
+        "def run(ctx, **kw):\n"
+        "    # would call sam3.segment_text if it could\n"
+        "    return ctx.tool(NAME, query='sponge')\n",
+    )
+    assert script_tool_names(wf_dir) == set()
+    assert required_rpc_tool_bundles(wf_dir, _sam3_only(tmp_path)) == set()
+
+
+def test_a_bare_tool_name_is_not_a_bundle(tmp_path):
+    """``ctx.tool("noop")`` names no bundle; only a dotted name can."""
+    wf_dir = _write_scripted_workflow(tmp_path, "def run(ctx, **kw):\n    return ctx.tool('noop')\n")
+    assert script_tool_names(wf_dir) == set()
+
+
+def test_a_script_that_does_not_parse_is_skipped(tmp_path):
+    """This runs before the graph does and must never be what stops it."""
+    wf_dir = _write_scripted_workflow(tmp_path, "def run(ctx:\n")
+    (wf_dir / "scripts" / "ok.py").write_text(
+        "def f(ctx):\n    return ctx.tool('sam3.segment_text')\n"
+    )
+    assert script_tool_names(wf_dir) == {"sam3.segment_text"}
 
 
 def test_boot_tool_bundles_returns_none_when_no_rpc_needed(tmp_path):

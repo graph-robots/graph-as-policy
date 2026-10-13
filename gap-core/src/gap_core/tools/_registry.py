@@ -468,8 +468,34 @@ class ToolRegistry:
     def get(self, name: str) -> ToolDescriptor:
         if name not in self._tools:
             available = ", ".join(sorted(self._tools.keys()))
-            raise KeyError(f"Tool {name!r} not found (available: {available[:200]}...)")
+            raise KeyError(
+                f"Tool {name!r} not found (available: {available[:200]}...)"
+                f"{self._bundle_hint(name)}"
+            )
         return self._tools[name]
+
+    def _bundle_hint(self, name: str) -> str:
+        """Why a whole family of tools can be missing, said at the point of failure.
+
+        A dotted name whose prefix matches nothing here is most often a tool
+        bundle that never booted rather than a typo: bundles are started per
+        graph, from what the graph shows and from what its scripts call, so a
+        name built at run time or reached through a helper outside the graph
+        directory starts nothing. Listing what IS available cannot convey that
+        -- a reader sees a catalogue missing one family and concludes the
+        family is unavailable here. One self-learning agent concluded exactly
+        that and spent three iterations writing fallbacks around a segmenter it
+        could have had for one line.
+        """
+        prefix, dot, _ = name.partition(".")
+        if not dot or any(tool.startswith(f"{prefix}.") for tool in self._tools):
+            return ""
+        return (
+            f". No {prefix!r} tool is registered at all, so this is most likely a bundle "
+            f"that was not booted rather than a wrong name: a graph boots bundles from its "
+            f"tool nodes, the skills its subgraphs name, the tool names its own scripts "
+            f"literally call, and its workflow-level 'requires': {{'tools': ['{name}']}}"
+        )
 
     def __contains__(self, name: str) -> bool:
         return name in self._tools
