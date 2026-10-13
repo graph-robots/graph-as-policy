@@ -277,6 +277,9 @@ class ToolRegistry:
 
     def __init__(self) -> None:
         self._tools: dict[str, ToolDescriptor] = {}
+        # Names registered with ``default=True``: a later register_callable of the
+        # same name replaces them instead of colliding.
+        self._defaults: set[str] = set()
         self.python_adapter = PythonAdapter()
         self.rpc_adapter = RpcAdapter()
 
@@ -350,13 +353,17 @@ class ToolRegistry:
         tags: tuple[str, ...] = (),
         requires_ctx: bool | None = None,
         scope: ToolScope = "runtime",
+        default: bool = False,
     ) -> None:
         """Register a plain callable under an explicit name.
 
         The connector's entry point for ``robot.*`` / ``sim.*`` tools — the
         only path allowed to claim those reserved prefixes. Unlike module
         re-discovery there is no idempotent escape: re-registering an
-        existing name always raises ``ValueError``.
+        existing name raises ``ValueError`` -- unless the first registration
+        was a ``default``, which a later one replaces. That is how a base
+        connector offers a generic ``robot.describe_gripper`` that a simulator's
+        connector, knowing its own hand, overrides.
 
         Args:
             name: Canonical tool name (reserved prefixes allowed here).
@@ -366,13 +373,20 @@ class ToolRegistry:
             requires_ctx: Whether to inject the NodeContext as the first
                 positional argument. ``None`` (default) auto-detects from a
                 ``ctx`` parameter in the signature.
+            default: A fallback implementation that a later registration of
+                the same name may replace.
         """
         if name in self._tools:
-            raise ValueError(f"Tool name collision: {name!r} already registered")
+            if name not in self._defaults:
+                raise ValueError(f"Tool name collision: {name!r} already registered")
+            del self._tools[name]
+            self._defaults.discard(name)
         self._register_python(
             name, summary, scope, tuple(tags), fn,
             requires_ctx=requires_ctx, allow_reserved=True,
         )
+        if default:
+            self._defaults.add(name)
 
     def _discover_python(self, root: Path) -> None:
         if not root.is_dir():

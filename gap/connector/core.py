@@ -316,15 +316,17 @@ class Connector:
            summary="Get named arm joints with limits, normalized progress and margin.")
         # Embodiment description — what hand/arm/table this actually is, so
         # skills can stay written against "the hand" rather than a Panda.
+        # Registered as defaults: a simulator connector that knows its own hand
+        # (RoboSimStudio's does) registers the same names and replaces these.
         rc("robot.describe_gripper", self.describe_gripper,
-           summary="Describe the hand: jaw span, closing axis, fingertip geometry.")
+           summary="Describe the hand: jaw span, closing axis, fingertip geometry.", default=True)
         rc("robot.describe_arm", self.describe_arm,
-           summary="Describe the arm: DOF, TCP offset, home pose, solver behaviour.")
+           summary="Describe the arm: DOF, TCP offset, home pose, solver behaviour.", default=True)
         rc("robot.describe_workspace", self.describe_workspace,
-           summary="Describe the work surface height, transport height and clearances.")
+           summary="Describe the work surface height, transport height and clearances.", default=True)
         rc("robot.grasp_frame", self.grasp_frame,
            summary="Compose the wrist rotation for an approach direction "
-                   "plus a jaw-closing heading, in THIS hand's axes.")
+                   "plus a jaw-closing heading, in THIS hand's axes.", default=True)
         # Control — sim_step guard tag.
         rc("robot.go_to_pose", self.go_to_pose,
            summary="Move the end-effector to a world-frame pose via IK. "
@@ -363,10 +365,10 @@ class Connector:
            tags=("sim_step",))
         rc("robot.set_grip", self.set_grip,
            summary="Command a partial jaw opening (0 closed, 1 open).",
-           tags=("sim_step",))
+           tags=("sim_step",), default=True)  # a simulator connector may supply its own
         rc("robot.wait_steps", self.wait_steps,
            summary="Hold the current command for N control steps and let physics settle.",
-           tags=("sim_step",))
+           tags=("sim_step",), default=True)  # a simulator connector may supply its own
         # Planning.
         rc("robot.solve_ik", self._tool_solve_ik,
            summary="Solve IK for a world-frame pose; returns a joint configuration.",

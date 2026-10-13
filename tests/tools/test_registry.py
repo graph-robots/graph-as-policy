@@ -120,7 +120,7 @@ def test_register_callable_allows_reserved_prefix():
     assert RESERVED_TOOL_PREFIXES == ("robot.", "sim.")
 
 
-def test_register_callable_collision_always_raises():
+def test_register_callable_collision_raises_unless_default():
     reg = ToolRegistry()
 
     def grip() -> SumOutput:
@@ -129,6 +129,23 @@ def test_register_callable_collision_always_raises():
     reg.register_callable("robot.grip", grip, summary="g")
     with pytest.raises(ValueError, match="collision"):
         reg.register_callable("robot.grip", grip, summary="g again")
+
+
+def test_register_callable_replaces_a_default():
+    reg = ToolRegistry()
+
+    def generic() -> SumOutput:
+        return {"sum": 1}
+
+    def specific() -> SumOutput:
+        return {"sum": 2}
+
+    reg.register_callable("robot.grip", generic, summary="generic", default=True)
+    reg.register_callable("robot.grip", specific, summary="specific")
+    assert reg.get("robot.grip").summary == "specific"
+    assert reg.invoke("robot.grip") == {"sum": 2}
+    with pytest.raises(ValueError, match="collision"):  # the replacement is not a default
+        reg.register_callable("robot.grip", generic, summary="again")
 
 
 # --- dispatch ---
