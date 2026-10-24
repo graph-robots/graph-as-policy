@@ -20,9 +20,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:
              "(default: tools-only, no robot)",
     )
     sp.add_argument(
-        "--real", default=None, choices=["franka", "ur_zed"],
+        "--real", default=None, choices=["franka", "ur_zed", "ur5e_bimanual"],
         help="Run against a real-hardware connector (franka: robots_realtime "
-             "msgpack bridge; ur_zed: perception-only UR + ZED). "
+             "msgpack bridge; ur_zed: perception-only UR + ZED; ur5e_bimanual: "
+             "the dionysus rig — GAP_UR_DRY_RUN=1 / GAP_UR_CONFIRM=1 recommended). "
              "READ THE SAFETY NOTES in examples/real_franka_pick_place/README.md "
              "before driving hardware.",
     )

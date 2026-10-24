@@ -250,9 +250,10 @@ regression bar for every release:
   in core.
 - **Extras** gate the heavy stacks: `[libero]` (MuJoCo/robosuite/the posvar
   LIBERO fork — `mujoco==3.6.0` is pinned exactly because the acceptance
-  numbers were measured on it), `[ray]`, `[real]`, `[vertex]`, `[policy]`,
-  plus meta-extras `[quickstart]`, `[grocery]`, and `[all]` that span both
-  repos. open-robot-skills mirrors this with one extra per bundle. See
+  numbers were measured on it), `[ray]`, `[real]`, `[vertex]`, `[policy]`.
+  open-robot-skills bundles install one at a time (`gap skills install`),
+  never as an extra of this package, so the two repos do not depend on each
+  other in a cycle. See
   [Installation](../getting-started/installation.md).
 - **uv-first.** The committed `uv.lock` pins the exact environment the
   measured results were produced on; `[tool.uv.sources]` resolves the

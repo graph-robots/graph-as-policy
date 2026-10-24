@@ -33,7 +33,7 @@ grid scale — see [Benchmark Grids](benchmark.md#policy-modes).
 ## Run it
 
 ```bash
-uv sync --extra quickstart --extra policy   # sim + perception + openpi websocket client
+uv sync --extra policy && uv run gap skills install sam3 grounding-dino geometry   # sim + perception + openpi websocket client
 ```
 
 Serve a policy first. `gap policy serve` spawns the preset's server command

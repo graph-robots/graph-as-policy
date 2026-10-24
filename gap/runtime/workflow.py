@@ -281,6 +281,16 @@ class Workflow:
     So an author can say it outright. This is a declaration of need, not of
     provenance: it changes which bundles boot and nothing else, and a name here
     that no script calls costs one subprocess.
+
+    **It is no longer the only way, and should not have been.** A declaration
+    only helps an author who knows the rule, and the failure states it nowhere:
+    a self-learning agent that had never been told spent three iterations and
+    thirty-six episodes writing fallbacks around a segmenter nobody had
+    started. ``gap.runtime.tool_bundle_boot.script_tool_names`` now reads the
+    graph's own Python and boots what it literally calls, so the common case
+    needs no declaration at all. This stays for the names a reader cannot see:
+    a tool name assembled at run time, or one reached through a helper that
+    does not ship with the graph.
     """
 
     def begin_targets(self) -> list[str]:

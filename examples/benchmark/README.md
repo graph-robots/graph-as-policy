@@ -11,7 +11,7 @@ config's `output_dir`.
 ## Run it
 
 ```bash
-CUDA_HOME=/usr/local/cuda uv sync --extra grocery   # the benchmark families plan with CuRobo
+uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo   # the benchmark families plan with CuRobo
 export OPENROUTER_API_KEY=...                       # codegen + VLM (or vertex)
 MUJOCO_GL=egl uv run gap benchmark examples/benchmark/smoke.yaml
 ```

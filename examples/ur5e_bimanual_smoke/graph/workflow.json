@@ -1,0 +1,94 @@
+{
+ "version": 3,
+ "meta": {
+  "name": "ur5e_bimanual_smoke",
+  "description": "Bring-up check for the dionysus bimanual UR5e rig: per arm, home, a short straight descent and rise above the table, open-close-open the gripper; then one observation of all cameras. No objects are touched."
+ },
+ "nodes": {
+  "smoke": {
+   "type": "subgraph",
+   "ref": "smoke_sg"
+  },
+  "done": {
+   "type": "end",
+   "status": "success"
+  },
+  "abort": {
+   "type": "end",
+   "status": "failure"
+  }
+ },
+ "edges": [
+  [
+   "START",
+   "smoke"
+  ]
+ ],
+ "conditional_edges": {
+  "smoke": {
+   "router_field": "exit",
+   "mapping": {
+    "ok": "done",
+    "failed": "abort"
+   }
+  }
+ },
+ "subgraphs": {
+  "smoke_sg": {
+   "skill": "generated",
+   "inputs": {},
+   "outputs": {
+    "report": {
+     "$ref": "check.report"
+    }
+   },
+   "nodes": {
+    "check": {
+     "type": "script",
+     "script": "scripts/smoke.py",
+     "inputs": {
+      "arm_ids": [
+       0,
+       1
+      ],
+      "descend_m": 0.08,
+      "gripper": true
+     }
+    },
+    "observe": {
+     "type": "tool",
+     "tool": "robot.get_observation"
+    },
+    "ok": {
+     "type": "noop"
+    }
+   },
+   "edges": [
+    [
+     "START",
+     "check"
+    ],
+    [
+     "check",
+     "observe"
+    ],
+    [
+     "observe",
+     "ok"
+    ],
+    [
+     "ok",
+     "END"
+    ]
+   ],
+   "conditional_edges": {},
+   "exit": {
+    "router_field": null,
+    "success_values": [
+     "ok"
+    ]
+   },
+   "on_error": "failed"
+  }
+ }
+}

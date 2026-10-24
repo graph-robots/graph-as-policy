@@ -34,7 +34,7 @@ without your hardware.
 - Python version:
 - GPU + driver (`nvidia-smi` header) and `MUJOCO_GL` value, if sim-related:
 - gap install: commit SHA + extras installed (e.g. `[libero]`)
-- open-robot-skills: commit SHA + extras installed (e.g. `[quickstart]`)
+- open-robot-skills: commit SHA + bundles installed (e.g. `sam3`, `curobo`)
 - LLM/VLM provider + model (if agent/VLM-related):
 
 ## Logs

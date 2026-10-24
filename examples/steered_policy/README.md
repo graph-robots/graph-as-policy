@@ -23,7 +23,7 @@ which starts from a pose close to its training distribution.
 ## Run it
 
 ```bash
-uv sync --extra quickstart --extra policy   # + the openpi websocket client
+uv sync --extra policy && uv run gap skills install sam3 grounding-dino geometry   # + the openpi websocket client
 ```
 
 The graph references a policy **skill** (e.g. `pi05-libero`), whose preset

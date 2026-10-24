@@ -208,7 +208,7 @@ def test_quickstart_checkpoint_module_loads() -> None:
 def test_quickstart_live_e2e_seed1(tmp_path) -> None:
     """One full pick-the-soup-can-into-basket rollout on seed 1.
 
-    Requires: [libero] extra + EGL, open-robot-skills[quickstart] weights on a CUDA
+    Requires: [libero] extra + EGL, the sam3 / grounding-dino / geometry bundles' weights on a CUDA
     device, and a live VLM provider. ~2-4 minutes.
     """
     pytest.importorskip("gap.envs.registry")

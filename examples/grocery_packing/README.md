@@ -115,7 +115,7 @@ transport); the *benchmark* owns the teleport and the score.
 
 ## Execute it
 
-Needs the `perceiving-objects` weights, CuRobo (`uv sync --extra grocery`), a
+Needs the `perceiving-objects` weights, CuRobo (`CUDA_HOME=/usr/local/cuda uv run gap skills install curobo`), a
 VLM credential, and the executor's back-edge support (in this checkout):
 
 ```bash

@@ -583,7 +583,7 @@ class PyRokiBackend:
 
 
 # ---------------------------------------------------------------------------
-# Backend — cuRobo v0.8 (GPU): linear motion + IK fallback via plan_to_pose
+# Backend — cuRobo v0.8 (GPU): linear motion, plus its own InverseKinematics
 # ---------------------------------------------------------------------------
 
 
@@ -610,10 +610,10 @@ class CuRoboBackend:
         machinery and already report ``(success, trajectory, ...)``.
 
     ``solve_ik``
-        Delegates to ``plan_to_pose`` and returns the endpoint joints of the
-        returned trajectory. cuRobo v0.8 deliberately dropped the standalone
-        v0.7 ``IKSolver`` API, and ``_curobo_impl.solve_ik`` raises on v0.8;
-        ``plan_to_pose`` is the supported v0.8-native single-pose solver.
+        Solves through cuRobo's own ``InverseKinematics`` (thirty-two seeds
+        on the GPU, the one nearest the seed kept), built once per backend
+        from ``robot_file``; ``plan_to_pose`` is the collision-aware planner,
+        not an IK.
 
     cuRobo is CUDA-only. The implementation module is imported lazily, so
     constructing this backend on a CPU-only box succeeds — only an actual
@@ -781,6 +781,32 @@ class CuRoboBackend:
 
     # -- IK ----------------------------------------------------------------
 
+    def _ik(self):
+        """cuRobo's IK solver for ``robot_file``, built once and kept.
+
+        Thirty-two parallel seeds, self-collision aware, no world: the same
+        problem ``plan_to_pose`` was standing in for at thirty-seven
+        milliseconds a call, at a few. Built lazily so a backend constructed
+        for its frames alone never touches the GPU.
+        """
+        ik = getattr(self, "_ik_solver", None)
+        if ik is None:
+            try:
+                from curobo.inverse_kinematics import (  # noqa: PLC0415
+                    InverseKinematics,
+                    InverseKinematicsCfg,
+                )
+            except ImportError as e:
+                raise ImportError(f"{_CUROBO_INSTALL_HINT} ({e})") from e
+            config = InverseKinematicsCfg.create(
+                robot=self._robot_file,
+                num_seeds=32,
+                use_cuda_graph=bool(self._use_cuda_graph),
+            )
+            ik = InverseKinematics(config)
+            self._ik_solver = ik
+        return ik
+
     def solve_ik(
         self,
         target_world_pose: Se3Pose,
@@ -789,44 +815,46 @@ class CuRoboBackend:
         seed_joints: list[float] | None = None,
         tcp_offset: np.ndarray | None = None,
     ) -> list[float] | None:
-        """Solve IK by running ``plan_to_pose`` and returning its endpoint.
+        """Solve IK for a TCP-frame world pose with cuRobo's ``InverseKinematics``.
 
-        ``target_world_pose`` is a TCP-frame pose. ``_pose_for_curobo`` does
-        the world→base + TCP→link conversion using ``self._tcp_offset`` /
-        ``self._tcp_rotation``, so we pass ``tcp_offset=None`` to the impl —
-        all offset math lives in the backend, with a single sign convention.
-        The per-call ``tcp_offset`` kwarg is accepted for interface parity
-        with PyRokiBackend but is ignored (configured offset governs).
+        ``_pose_for_curobo`` does the world→base + TCP→link conversion using
+        ``self._tcp_offset`` / ``self._tcp_rotation``, so the solver sees a
+        pure link-frame target — all offset math lives in the backend, with a
+        single sign convention. The per-call ``tcp_offset`` kwarg is accepted
+        for interface parity with PyRokiBackend but is ignored (configured
+        offset governs).
 
-        cuRobo v0.8 dropped the standalone IK API; the v0.8-native single-
-        pose planner already runs IK internally and returns a trajectory
-        whose last waypoint is the solution. Returns simulator-order joints
-        or None on failure (matches PyRokiBackend's contract).
+        The seed (``seed_joints``, else home, else zero) is the solver's
+        ``current_state``, so of the seeds that converge the one nearest the
+        arm's posture is returned. Returns simulator-order joints or None on
+        failure (matches PyRokiBackend's contract).
         """
         del tcp_offset  # configured offset governs; per-call kwarg ignored
-        impl = self._import_impl()
         target_pos, target_quat_wxyz = self._pose_for_curobo(target_world_pose, arm_id)
         seed_arr = self._resolve_seed(seed_joints)
-
         try:
-            success, trajectory = impl.plan_to_pose(
-                target_position=target_pos,
-                target_quat_wxyz=target_quat_wxyz,
-                start_joint_position=seed_arr,
-                robot_file=self._robot_file,
-                tcp_offset=None,  # already applied in _pose_for_curobo
-                use_cuda_graph=self._use_cuda_graph,
+            import torch  # noqa: PLC0415
+            from curobo.types import GoalToolPose, JointState, Pose  # noqa: PLC0415
+
+            ik = self._ik()
+            device = getattr(ik.device_cfg, "device", "cuda")
+            as_row = lambda a: torch.as_tensor(  # noqa: E731
+                np.asarray(a, dtype=np.float32).reshape(1, -1), device=device
+            )
+            goal = Pose(position=as_row(target_pos), quaternion=as_row(target_quat_wxyz))
+            seed = JointState.from_position(as_row(seed_arr[: self._arm_dof]), joint_names=list(ik.joint_names))
+            result = ik.solve_pose(
+                GoalToolPose.from_poses({ik.tool_frames[0]: goal}, num_goalset=1),
+                current_state=seed,
             )
         except Exception:
-            logger.exception("CuRoboBackend.solve_ik: plan_to_pose raised")
+            logger.exception("CuRoboBackend.solve_ik: InverseKinematics raised")
             return None
-        if not success or trajectory is None:
+        if not bool(result.success.reshape(-1)[0].item()):
             logger.warning("CuRoboBackend.solve_ik: no IK solution")
             return None
-        arr = np.asarray(trajectory)
-        if arr.size == 0:
-            return None
-        return [float(v) for v in arr[-1, : self._arm_dof]]
+        joints = np.asarray(result.js_solution.position.detach().cpu().numpy(), dtype=np.float64).reshape(-1)
+        return [float(v) for v in joints[: self._arm_dof]]
 
     # --- Linear plan + IK fallback ----------------------------------------
 

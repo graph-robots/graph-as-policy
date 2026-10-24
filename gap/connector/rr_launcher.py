@@ -43,9 +43,13 @@ class RRSession:
             Defaults to the vendored submodule.
         log_path: File the child's combined stdout/stderr is teed to.
             Defaults to ``/tmp/gap_rr_session_<pid>.log``.
-        command: Test seam — full argv override. When given, *config*/*cwd*
-            only label logs and the default ``uv run … rr-session`` command
-            is not built.
+        command: Full argv override (e.g. the checkout's own venv
+            ``rr-session`` binary, which avoids ``uv run`` re-syncing the
+            lockfile). The child still runs in *cwd*, so the session yaml's
+            relative paths resolve.
+        env: Child environment; default is this process's minus the
+            variables that would leak this interpreter into the child
+            (``PYTHONPATH``, ``VIRTUAL_ENV``, ``PYTHONHOME``).
     """
 
     def __init__(
@@ -55,6 +59,7 @@ class RRSession:
         cwd: str | Path | None = None,
         log_path: str | Path | None = None,
         command: Sequence[str] | None = None,
+        env: dict[str, str] | None = None,
     ) -> None:
         self.config = str(config)
         self.cwd = Path(cwd) if cwd is not None else DEFAULT_RR_DIR
@@ -71,8 +76,13 @@ class RRSession:
             ]
         self.command = list(command)
 
+        if env is None:
+            env = {k: v for k, v in os.environ.items()
+                   if k not in ("PYTHONPATH", "VIRTUAL_ENV", "PYTHONHOME")}
         self._proc = subprocess.Popen(
             self.command,
+            cwd=str(self.cwd) if self.cwd.is_dir() else None,
+            env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             # Own process group (setsid): rr-session forks node children;
@@ -115,7 +125,7 @@ class RRSession:
     def pid(self) -> int:
         return self._proc.pid
 
-    def terminate(self, grace_s: float = 5.0) -> None:
+    def terminate(self, grace_s: float = 12.0) -> None:
         """Kill the whole process group: SIGTERM, wait *grace_s*, SIGKILL."""
         if self._proc.poll() is not None:
             return
