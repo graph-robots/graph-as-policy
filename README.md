@@ -7,6 +7,8 @@
 
 
 
+**CoRL 2026** · [Paper (arXiv)](https://arxiv.org/abs/2607.05369) · [Project page](https://graph-robots.github.io/gap/)
+
 **The graph is the policy.**
 GaP targets *Variational Automation* — tasks a robot must perform persistently
 and reliably across many varying instances (objects vary in geometry and pose),
@@ -126,6 +128,28 @@ in sim"*, *"generate a graph that packs the groceries"*, *"why did this
 trial fail?"*. Real-robot commands are gated on explicit human
 confirmation. Other agents (Cursor, Codex, …) and the no-install path:
 [agent/INSTALL.md](agent/INSTALL.md).
+
+## Citation
+
+If you use GaP in your research, please cite our CoRL 2026 paper:
+
+```bibtex
+@inproceedings{chen2026gap,
+  title     = {GaP: A Graph-as-Policy Multi-Agent Self-Learning Harness
+               for Variational Automation (VA) Tasks},
+  author    = {Chen, Kaiyuan and Xie, Shuangyu and Fu, Letian and Yu, Justin and
+               Pacini, William and Bajamahal, Sandeep and Kim, Hudson and
+               Drake, Jaimyn and Kim, Daehwa and Xue, Haoru and Francis, Jonathan and
+               Juette, Christian and Schaldenbrand, Peter and Seker, Muhammet Yunus and
+               Wickramarachchi, Ruwan and Yoo, Uksang and Wang, Guanzhi and
+               Murali, Adithyavairavan and Sundaralingam, Balakumar and
+               Sastry, S. Shankar and Huang, Spencer and Zhu, Yuke and
+               Fan, Linxi and Goldberg, Ken},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2607.05369}
+}
+```
 
 ## License & attribution
 
