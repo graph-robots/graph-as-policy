@@ -50,6 +50,11 @@ logger = logging.getLogger(__name__)
 #: submodule checkout.
 DEFAULT_FRANKA_RR_CONFIG = "configs/franka/franka_robotiq_client.yaml"
 
+#: rr-session configs for the dionysus bimanual UR5e rig (relative to the
+#: robots_realtime checkout). The dry-run one opens the arms read-only.
+DEFAULT_UR5E_RR_CONFIG = "configs/ur5e_bimanual/gap_client.yaml"
+DEFAULT_UR5E_RR_DRYRUN_CONFIG = "configs/ur5e_bimanual/gap_client_dryrun.yaml"
+
 #: Observation/camera tool subset registered for perception-only robots.
 _OBSERVATION_TOOL_PREFIXES = (
     "robot.get_observation",
@@ -279,7 +284,36 @@ def real(
             raise
         return conn
 
-    raise ValueError(f"unknown real robot {robot!r}; expected 'franka' or 'ur_zed'")
+    if robot == "ur5e_bimanual":
+        from gap.connector.rr_launcher import DEFAULT_RR_DIR, RRSession
+        from gap.connector.ur5e_bimanual import UR5eBimanualConnector
+
+        factory, key = resolve("ur5e_bimanual_real")
+        if port is not None:
+            env_kwargs["port"] = port
+        env, config = factory(key, 0, camera_names=cameras, **env_kwargs)
+        rr_session = None
+        try:
+            if rr_autostart:
+                cfg = rr_config or (DEFAULT_UR5E_RR_DRYRUN_CONFIG if env.dry_run else DEFAULT_UR5E_RR_CONFIG)
+                binary = DEFAULT_RR_DIR / ".venv" / "bin" / "rr-session"
+                command = [str(binary), str(cfg), "--no-tui"] if binary.exists() else None
+                rr_session = RRSession(cfg, log_path=rr_log_path, command=command)
+            rig_wire = env.wait_for_rig(timeout_s=wait_timeout_s)
+        except BaseException:
+            if rr_session is not None:
+                rr_session.terminate()
+            env.close()
+            raise
+        conn = UR5eBimanualConnector(env, config, rig_wire=rig_wire, camera_names=cameras, rr_session=rr_session)
+        try:
+            conn.wait_ready(timeout_s=wait_timeout_s)
+        except BaseException:
+            conn.close()
+            raise
+        return conn
+
+    raise ValueError(f"unknown real robot {robot!r}; expected 'franka', 'ur_zed' or 'ur5e_bimanual'")
 
 
-__all__ = ["DEFAULT_FRANKA_RR_CONFIG", "RealConnector", "real"]
+__all__ = ["DEFAULT_FRANKA_RR_CONFIG", "DEFAULT_UR5E_RR_CONFIG", "RealConnector", "real"]

@@ -14,7 +14,7 @@ sim's own success predicate and a ground-truth `target_held` checkpoint.
 From the GaP checkout (open-robot-skills cloned next to it):
 
 ```bash
-uv sync --extra quickstart            # engine + LIBERO sim + perception models
+uv sync && uv run gap skills install sam3 grounding-dino geometry            # engine + LIBERO sim + perception models
 uv run gap skills check --download    # verify bundles + prefetch weights (~3.5 GB)
 export OPENROUTER_API_KEY=...          # VLM provider — alternatives below
 
@@ -45,7 +45,7 @@ uv run gap viz                        # browse the recorded trial
 its grasp subgraph with the planner-free recipe so the quickstart needs no
 CuRobo install; perception and transport are identical.
 
-`--extra quickstart` pulls torch, torchvision, SAM3 (pinned git SHA),
+`gap skills install sam3 grounding-dino geometry` pulls torch, torchvision, SAM3 (pinned git SHA),
 Grounding DINO (transformers), and the CPU geometry deps — pinned by the
 committed `uv.lock`. Model weights (`facebook/sam3`,
 `IDEA-Research/grounding-dino-base`) download from HuggingFace on first
@@ -99,7 +99,7 @@ To run `graph_planner/`, install CuRobo first (CUDA build), then point
 `gap run` at it:
 
 ```bash
-CUDA_HOME=/usr/local/cuda uv sync --extra grocery
+uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo
 MUJOCO_GL=egl uv run gap run examples/libero_quickstart/graph_planner \
   --sim libero_object_all_variance/0
 ```

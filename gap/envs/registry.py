@@ -160,6 +160,8 @@ register_env(
 # (direct pyzed capture + read-only RTDE joint state).
 register_env("franka_real", "gap.envs.franka_real_env:make_env")
 register_env("ur_zed", "gap.envs.ur_zed_env:make_env")
+# dionysus bimanual UR5e rig: robots_realtime msgpack bridge, both arms + 4 RGB-D.
+register_env("ur5e_bimanual_real", "gap.envs.ur5e_bimanual_real_env:make_env")
 
 # Classic LIBERO-PRO benchmark-registry suites. The "libero" prefix entry
 # already covers every libero_* name; these exact rows pin the canonical

@@ -22,9 +22,9 @@ commercial use.
 | Project | Pulled in by | License |
 |---|---|---|
 | [pyroki](https://github.com/chungmin99/pyroki) (in-process IK, JAX) | gap core | MIT |
-| [SAM3](https://github.com/facebookresearch/sam3) — model code via git pin; weights `facebook/sam3` from HuggingFace | `open-robot-skills[sam3]` / `[quickstart]` | **SAM License** (Meta custom license; governs both code and weights — review its use restrictions and redistribution terms) |
-| Grounding DINO — used through `transformers`; weights `IDEA-Research/grounding-dino-base` downloaded from HuggingFace on first call | `open-robot-skills[grounding-dino]` / `[quickstart]` | Apache-2.0 (GroundingDINO project and model card) |
-| [NVIDIA cuRobo](https://github.com/NVlabs/curobo) (collision-aware motion planning) | `open-robot-skills[curobo]` / `[grocery]` — **optional**, required only for the planner variant and the acceptance benchmark | The pinned cuRoboV2 research-release revision ships an Apache-2.0 LICENSE (+ a LICENSE_ASSETS file for bundled robot assets); other cuRobo revisions are distributed under the **NVIDIA Source Code License** (non-commercial terms). cuRobo is never vendored here — verify the LICENSE of the revision you install. |
+| [SAM3](https://github.com/facebookresearch/sam3) — model code via git pin; weights `facebook/sam3` from HuggingFace | the `sam3` bundle (`gap skills install sam3`) | **SAM License** (Meta custom license; governs both code and weights — review its use restrictions and redistribution terms) |
+| Grounding DINO — used through `transformers`; weights `IDEA-Research/grounding-dino-base` downloaded from HuggingFace on first call | the `grounding-dino` bundle (`gap skills install grounding-dino`) | Apache-2.0 (GroundingDINO project and model card) |
+| [NVIDIA cuRobo](https://github.com/NVlabs/curobo) (collision-aware motion planning) | the `curobo` bundle (`gap skills install curobo`) — **optional**, required only for the planner variant and the acceptance benchmark | The pinned cuRoboV2 research-release revision ships an Apache-2.0 LICENSE (+ a LICENSE_ASSETS file for bundled robot assets); other cuRobo revisions are distributed under the **NVIDIA Source Code License** (non-commercial terms). cuRobo is never vendored here — verify the LICENSE of the revision you install. |
 | [openpi-client](https://github.com/Physical-Intelligence/openpi) (policy-server websocket client) | `gap[policy]`, `open-robot-skills[pi05-libero]` / `[molmoact-libero]` | Apache-2.0 |
 
 ## Model weights

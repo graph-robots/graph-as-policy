@@ -14,7 +14,7 @@ Each bundle declares a pip extra named after itself, so installs are
 one resolver run:
 
 ```bash
-uv sync --extra sam3 --extra grounding-dino --extra geometry   # = --extra quickstart
+uv run gap skills install sam3 grounding-dino geometry
 ```
 
 :::{note} Requirements

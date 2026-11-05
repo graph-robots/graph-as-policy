@@ -18,7 +18,7 @@ that `pyproject.toml` references are empty directories. Re-clone with
 
 **I ran a bare `uv sync` and my simulator/perception install disappeared.**
 `uv sync` is *exact*: it makes the environment match exactly what you ask
-for, so a bare `uv sync` after `uv sync --extra quickstart` removes the
+for, so a bare `uv sync` after `uv sync && uv run gap skills install sam3 grounding-dino geometry` removes the
 quickstart extras again. Always repeat the `--extra` flags you want, or
 use `uv sync --inexact …` for additive installs. See
 [Installation](../getting-started/installation.md).
@@ -52,7 +52,7 @@ the gated SAM3 weights sit in the default perception path. See
 CuRobo JIT-compiles CUDA code at install time: `CUDA_HOME` must point at
 a toolkit matching your torch build's CUDA version, and pip installs need
 `--no-build-isolation`. The supported recipe is
-`CUDA_HOME=/usr/local/cuda uv sync --extra grocery` (or `--extra curobo`
+`uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo` (or `--extra curobo`
 inside the open-robot-skills checkout). The first planner call per
 process also pays a JIT warmup of several seconds — that is normal. See
 [Skill catalog](../skills/skill-catalog.md).

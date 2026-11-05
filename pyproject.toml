@@ -131,14 +131,6 @@ policy = [
   "openpi-client @ git+https://github.com/Physical-Intelligence/openpi.git#subdirectory=packages/openpi-client",
 ]
 
-# ---- one-command environments (`uv sync --extra <name>`) -------------------
-# Meta-extras spanning both repos: the engine's sim stack plus the matching
-# open-robot-skills bundle set, resolved from the side-by-side checkout via
-# [tool.uv.sources] below. Per-bundle dependencies and setup stay declared
-# bundle-by-bundle in open-robot-skills/pyproject.toml (one extra per bundle).
-quickstart = ["graph-as-policy[libero]", "open-robot-skills[quickstart]"]
-grocery = ["graph-as-policy[libero]", "open-robot-skills[grocery]"]
-all = ["graph-as-policy[libero,ray,vertex,policy]", "open-robot-skills[all]"]
 
 [dependency-groups]
 # Installed by default with `uv sync` (pip users: `pip install --group dev`).
@@ -167,7 +159,6 @@ members = ["gap-core"]
 [tool.uv.sources]
 libero = { path = "third_party/Variational-Automation-Benchmark", editable = true }
 robosuite = { path = "third_party/robosuite", editable = true }
-open-robot-skills = { path = "../open-robot-skills", editable = true }
 graph-as-policy-core = { workspace = true }
 
 [tool.uv]
@@ -178,7 +169,7 @@ override-dependencies = ["numpy>=1.26"]
 
 # CuRobo compiles CUDA extensions at install time against the environment's
 # torch: build it unisolated (CUDA_HOME must point at a toolkit matching
-# torch's CUDA when syncing --extra grocery/all).
+# torch's CUDA when syncing with the curobo bundle installed).
 no-build-isolation-package = ["nvidia-curobo"]
 
 [build-system]

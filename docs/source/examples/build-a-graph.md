@@ -7,7 +7,7 @@ Author a complete pick-and-place workflow in Python with `gap.builder` —
 :::{note} Requirements
 Building and validating runs without the sim (`uv sync`, ~1 min). The optional
 `--execute` step has the same requirements as the
-[LIBERO quickstart](libero-quickstart.md): `uv sync --extra quickstart`,
+[LIBERO quickstart](libero-quickstart.md): `uv sync && uv run gap skills install sam3 grounding-dino geometry`,
 a GPU, and a VLM credential.
 :::
 
