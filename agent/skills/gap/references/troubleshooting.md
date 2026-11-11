@@ -9,7 +9,7 @@ hint. Second stop: the trace of the failing run.
 |---|---|
 | `uv sync` → "does not appear to be a Python project" | Submodules not initialized → `git submodule update --init` (clone with `--recurse-submodules`) |
 | `uv sync` can't resolve `open-robot-skills` | The sibling checkout is missing → clone open-robot-skills next to graph-as-policy (engine `uv sync` needs it for path-source metadata) |
-| cuRobo build fails | `CUDA_HOME` unset → `CUDA_HOME=/usr/local/cuda uv sync --extra grocery` (cuRobo JIT-compiles CUDA at install) |
+| cuRobo build fails | `CUDA_HOME` unset → `uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo` (cuRobo JIT-compiles CUDA at install) |
 | Sim window/render errors, EGL asserts | Headless GL not selected → `MUJOCO_GL=egl` (NVIDIA driver + EGL required) |
 | sam3 install conflicts on numpy | Expected — the registry pyproject overrides sam3's strict pin (`numpy>=1.26`); use `uv sync`, don't hand-pip |
 | Gated HF weights 401 | `export HF_TOKEN=...`, then `gap skills check --download` |

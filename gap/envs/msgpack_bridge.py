@@ -88,6 +88,11 @@ class MsgpackNumpyServer:
         # Shared state — read/written by FrankaRealEnv
         self.latest_observation: dict[str, Any] | None = None
         self.latest_action: dict[str, Any] = {}
+        #: Optional ``fn(observation)`` called for *every* received frame, on
+        #: the server thread, before the reply. For envs that must not miss
+        #: fields a client sends only occasionally (polling
+        #: ``latest_observation`` sees just the newest frame).
+        self.on_observation = None
 
         # Set by start() / start_server_in_background() for clean shutdown.
         self._asyncio_server: asyncio.AbstractServer | None = None
@@ -136,6 +141,12 @@ class MsgpackNumpyServer:
                 # Receive observation from robots_realtime
                 request = await recv_framed(reader)
                 self.latest_observation = request
+                hook = self.on_observation
+                if hook is not None:
+                    try:
+                        hook(request)
+                    except Exception:
+                        logger.exception("[MsgpackServer] on_observation hook failed")
 
                 # Reply with latest action
                 await send_framed(writer, self.latest_action)

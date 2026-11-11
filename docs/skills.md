@@ -250,8 +250,7 @@ uv sync --extra my-model      # the install line your SKILL.md shows
 Run `uv lock` after editing the extras so the committed lockfile stays in
 sync.
 
-Meta-extras compose bundles: `[quickstart]` (sam3 + grounding-dino +
-geometry), `[grocery]` (quickstart + curobo), `[all]`. Non-PyPI deps are
+Bundles install one at a time (`gap skills install <bundle>`, or `--all`); there are no meta-extras. Non-PyPI deps are
 pinned `git+https` entries inside the extra. **uv/pip own code installs;
 `gap skills check` only verifies** (import probe + weight presence per
 bundle), and `gap skills check --download` prefetches **model weights
@@ -380,8 +379,8 @@ Before opening the PR (one bundle per PR):
       (lazy loading, §5); model/device knobs are `GAP_*` env vars
       documented in the body.
 - [ ] Dependencies are one extra in `pyproject.toml` (extra name == bundle
-      name); the SKILL.md body shows the `uv sync --extra <bundle>` install
-      line; `uv lock` is updated and `[all]` still resolves.
+      name); the SKILL.md body shows the `gap skills install <bundle>` install
+      line; `uv lock` is updated and the bundle's own environment still resolves.
 - [ ] Tool names are `<bundle>.<func>` — the `robot.*`/`sim.*` prefixes are
       reserved and will be rejected.
 - [ ] Unit tests on `FakeContext`/`make_test_observation` cover the happy

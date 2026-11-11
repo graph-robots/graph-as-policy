@@ -67,13 +67,13 @@ If the CLI is missing, set up from scratch (Linux; GPU needed for sim):
 git clone --recurse-submodules https://github.com/graph-robots/graph-as-policy.git
 git clone https://github.com/graph-robots/open-robot-skills.git   # side-by-side
 cd graph-as-policy
-uv sync --extra quickstart        # engine + sim + sam3/grounding-dino/geometry
+uv sync && uv run gap skills install sam3 grounding-dino geometry        # engine + sim + sam3/grounding-dino/geometry
 uv run gap skills check --download   # verify bundles + prefetch model weights
 ```
 
 Gotchas: cloning without `--recurse-submodules` breaks `uv sync`
 ("does not appear to be a Python project") — run
-`git submodule update --init`; `--extra grocery|all` need `CUDA_HOME` set
+`git submodule update --init`; `gap skills install curobo` needs `CUDA_HOME` set
 (cuRobo compiles CUDA at install); sim runs want `MUJOCO_GL=egl`.
 
 Env vars that matter: `OPENROUTER_API_KEY` (default codegen provider) /

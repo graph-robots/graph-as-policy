@@ -31,7 +31,7 @@ the configs it runs live in [examples/benchmark](gh-engine:examples/benchmark)
 ## Run it
 
 ```bash
-CUDA_HOME=/usr/local/cuda uv sync --extra grocery   # quickstart set + CuRobo planning
+uv sync && CUDA_HOME=/usr/local/cuda uv run gap skills install sam3 grounding-dino geometry curobo   # quickstart set + CuRobo planning
 uv run gap skills check --download
 
 # the 20-trial smoke (tasks 0-1)

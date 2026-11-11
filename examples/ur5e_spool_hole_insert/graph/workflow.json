@@ -1,0 +1,342 @@
+{
+ "version": 3,
+ "meta": {
+  "name": "ur5e_spool_hole_insert",
+  "description": "dionysus rig, left arm: find the round hole of a spool lying on the table with SAM3 on the left wrist camera, centre the gripper 6 cm above it, look again from there, then close the gripper, go 2.5 cm straight down into the hole and open it so the fingers grip the hole's wall from inside (inside-out grasp); lift the spool 40 cm, hold 2 s, set it back down, let go and back out. Any failure closes the gripper, rises straight up and stops."
+ },
+ "nodes": {
+  "perceive": {
+   "type": "subgraph",
+   "ref": "perceive_sg",
+   "inputs": {
+    "camera": "left_wrist",
+    "arm_id": 1
+   }
+  },
+  "approach": {
+   "type": "subgraph",
+   "ref": "approach_sg",
+   "inputs": {
+    "pre_pose": {
+     "$ref": "perceive.pre_pose"
+    },
+    "arm_id": 1
+   }
+  },
+  "refine": {
+   "type": "subgraph",
+   "ref": "perceive_sg",
+   "inputs": {
+    "camera": "left_wrist",
+    "arm_id": 1
+   }
+  },
+  "grasp": {
+   "type": "subgraph",
+   "ref": "grasp_sg",
+   "inputs": {
+    "pre_pose": {
+     "$ref": "refine.pre_pose"
+    },
+    "insert_pose": {
+     "$ref": "refine.insert_pose"
+    },
+    "arm_id": 1,
+    "lift_m": 0.4
+   }
+  },
+  "retreat": {
+   "type": "subgraph",
+   "ref": "retreat_sg",
+   "inputs": {
+    "arm_id": 1
+   }
+  },
+  "done": {
+   "type": "end",
+   "status": "success"
+  },
+  "abort": {
+   "type": "end",
+   "status": "failure"
+  }
+ },
+ "edges": [
+  [
+   "START",
+   "perceive"
+  ]
+ ],
+ "conditional_edges": {
+  "perceive": {
+   "router_field": "exit",
+   "mapping": {
+    "found": "approach",
+    "failed": "abort"
+   }
+  },
+  "approach": {
+   "router_field": "exit",
+   "mapping": {
+    "ok": "refine",
+    "failed": "retreat"
+   }
+  },
+  "refine": {
+   "router_field": "exit",
+   "mapping": {
+    "found": "grasp",
+    "failed": "retreat"
+   }
+  },
+  "grasp": {
+   "router_field": "exit",
+   "mapping": {
+    "grasped": "done",
+    "failed": "retreat"
+   }
+  },
+  "retreat": {
+   "router_field": "exit",
+   "mapping": {
+    "ok": "abort",
+    "failed": "abort"
+   }
+  }
+ },
+ "subgraphs": {
+  "perceive_sg": {
+   "skill": "generated",
+   "inputs": {
+    "camera": "str",
+    "arm_id": "int"
+   },
+   "outputs": {
+    "pre_pose": {
+     "$ref": "plan.pre_pose"
+    },
+    "insert_pose": {
+     "$ref": "plan.insert_pose"
+    }
+   },
+   "nodes": {
+    "observe": {
+     "type": "tool",
+     "tool": "robot.get_observation"
+    },
+    "detect": {
+     "type": "script",
+     "script": "scripts/perceive_hole.py",
+     "inputs": {
+      "cameras": {
+       "$ref": "observe.cameras"
+      },
+      "camera": {
+       "$ref": "in.camera"
+      }
+     }
+    },
+    "plan": {
+     "type": "script",
+     "script": "scripts/plan_insert.py",
+     "inputs": {
+      "hole": {
+       "$ref": "detect.hole"
+      },
+      "arm_id": {
+       "$ref": "in.arm_id"
+      }
+     }
+    },
+    "found": {
+     "type": "noop"
+    }
+   },
+   "edges": [
+    [
+     "START",
+     "observe"
+    ],
+    [
+     "observe",
+     "detect"
+    ],
+    [
+     "detect",
+     "plan"
+    ],
+    [
+     "plan",
+     "found"
+    ],
+    [
+     "found",
+     "END"
+    ]
+   ],
+   "conditional_edges": {},
+   "exit": {
+    "router_field": null,
+    "success_values": [
+     "found"
+    ]
+   },
+   "on_error": "failed"
+  },
+  "approach_sg": {
+   "skill": "generated",
+   "inputs": {
+    "pre_pose": "Se3Pose",
+    "arm_id": "int"
+   },
+   "outputs": {},
+   "nodes": {
+    "move": {
+     "type": "script",
+     "script": "scripts/move_to_pre.py",
+     "inputs": {
+      "pre_pose": {
+       "$ref": "in.pre_pose"
+      },
+      "arm_id": {
+       "$ref": "in.arm_id"
+      }
+     }
+    },
+    "ok": {
+     "type": "noop"
+    }
+   },
+   "edges": [
+    [
+     "START",
+     "move"
+    ],
+    [
+     "move",
+     "ok"
+    ],
+    [
+     "ok",
+     "END"
+    ]
+   ],
+   "conditional_edges": {},
+   "exit": {
+    "router_field": null,
+    "success_values": [
+     "ok"
+    ]
+   },
+   "on_error": "failed"
+  },
+  "grasp_sg": {
+   "skill": "generated",
+   "inputs": {
+    "pre_pose": "Se3Pose",
+    "insert_pose": "Se3Pose",
+    "arm_id": "int",
+    "lift_m": "float"
+   },
+   "outputs": {
+    "inserted_m": {
+     "$ref": "grasp.inserted_m"
+    },
+    "grip_open_fraction": {
+     "$ref": "grasp.grip_open_fraction"
+    },
+    "lifted_m": {
+     "$ref": "grasp.lifted_m"
+    }
+   },
+   "nodes": {
+    "grasp": {
+     "type": "script",
+     "script": "scripts/inside_grasp.py",
+     "inputs": {
+      "pre_pose": {
+       "$ref": "in.pre_pose"
+      },
+      "insert_pose": {
+       "$ref": "in.insert_pose"
+      },
+      "arm_id": {
+       "$ref": "in.arm_id"
+      },
+      "lift_m": {
+       "$ref": "in.lift_m"
+      }
+     }
+    },
+    "grasped": {
+     "type": "noop"
+    }
+   },
+   "edges": [
+    [
+     "START",
+     "grasp"
+    ],
+    [
+     "grasp",
+     "grasped"
+    ],
+    [
+     "grasped",
+     "END"
+    ]
+   ],
+   "conditional_edges": {},
+   "exit": {
+    "router_field": null,
+    "success_values": [
+     "grasped"
+    ]
+   },
+   "on_error": "failed"
+  },
+  "retreat_sg": {
+   "skill": "generated",
+   "inputs": {
+    "arm_id": "int"
+   },
+   "outputs": {},
+   "nodes": {
+    "retreat": {
+     "type": "script",
+     "script": "scripts/retreat.py",
+     "inputs": {
+      "arm_id": {
+       "$ref": "in.arm_id"
+      }
+     }
+    },
+    "ok": {
+     "type": "noop"
+    }
+   },
+   "edges": [
+    [
+     "START",
+     "retreat"
+    ],
+    [
+     "retreat",
+     "ok"
+    ],
+    [
+     "ok",
+     "END"
+    ]
+   ],
+   "conditional_edges": {},
+   "exit": {
+    "router_field": null,
+    "success_values": [
+     "ok"
+    ]
+   },
+   "on_error": "failed"
+  }
+ }
+}

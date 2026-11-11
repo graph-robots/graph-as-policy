@@ -12,7 +12,7 @@ skills) — steered by the same perception that collected the data (see
 ## 1. Collect
 
 ```bash
-uv sync --extra quickstart --extra policy   # sim + perception + openpi client
+uv sync --extra policy && uv run gap skills install sam3 grounding-dino geometry   # sim + perception + openpi client
 
 uv run python examples/collect_and_train/collect.py --episodes 50 --out demos.hdf5 \
     --graph examples/libero_quickstart/graph
