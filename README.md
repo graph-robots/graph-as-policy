@@ -9,6 +9,11 @@
 
 **CoRL 2026** · [Paper (arXiv)](https://arxiv.org/abs/2607.05369) · [Project page](https://graph-robots.github.io/gap/)
 
+🆕 **Nov 2026 — the self-learning pipeline is open source:**
+[**agentic-self-learning**](https://github.com/graph-robots/agentic-self-learning)
+· [Paper (arXiv)](https://arxiv.org/abs/2611.09030)
+· [Project page](https://graph-robots.github.io/agentic-self-learning/)
+
 **The graph is the policy.**
 GaP targets *Variational Automation* — tasks a robot must perform persistently
 and reliably across many varying instances (objects vary in geometry and pose),
@@ -101,6 +106,23 @@ Full gallery with install needs and time estimates in
 **[examples/README.md](examples/README.md)**. Real-robot examples
 — read [docs/safety.md](docs/safety.md) first.
 
+## Self-learning pipeline
+
+The loop that self-improves a graph in simulation is released as
+**[agentic-self-learning](https://github.com/graph-robots/agentic-self-learning)**.
+A coding agent (Claude Code or Codex) writes a GaP `workflow.json` policy,
+runs it on [RoboSimStudio](https://github.com/robosimstudio/robosimstudio)
+tasks, reads structured simulation feedback, and rewrites the graph. Every
+feedback condition from the study (state, relations, or visual feedback; how
+space is described; per-episode, per-motion, or per-node timing) is a config
+setting, and skills from
+[open-robot-skills](https://github.com/graph-robots/open-robot-skills) plug in
+as the agent's skill library.
+
+It accompanies *A Controlled Study of Models, Skills, Feedback, and Curriculum
+in Agentic Robotics* ([arXiv](https://arxiv.org/abs/2611.09030) ·
+[project page](https://graph-robots.github.io/agentic-self-learning/)).
+
 ## Documentation
 
 Full docs site: **<https://graph-robots.github.io/graph-as-policy/>**
@@ -148,6 +170,25 @@ If you use GaP in your research, please cite our CoRL 2026 paper:
   booktitle = {Conference on Robot Learning (CoRL)},
   year      = {2026},
   url       = {https://arxiv.org/abs/2607.05369}
+}
+```
+
+If you use the self-learning pipeline
+([agentic-self-learning](https://github.com/graph-robots/agentic-self-learning)),
+please also cite:
+
+```bibtex
+@misc{chen2026controlled,
+  title         = {A Controlled Study of Models, Skills, Feedback, and Curriculum
+                   in Agentic Robotics},
+  author        = {Chen, Kaiyuan and Zhu, Xinyue and Xie, Shuangyu and Yoo, Uksang and
+                   Luong, Thi Thu Phuong and Gualtieri, Marcus and Juette, Christian and
+                   Ren, Liu and Huang, Spencer and Goldberg, Ken},
+  year          = {2026},
+  eprint        = {2611.09030},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.RO},
+  url           = {https://arxiv.org/abs/2611.09030}
 }
 ```
 

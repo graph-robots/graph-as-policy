@@ -10,6 +10,18 @@ the workflow schema, and skill interfaces may change without notice between
 releases.
 :::
 
+:::{admonition} 🆕 Self-learning pipeline released (Nov 2026)
+:class: tip
+
+The loop that self-improves a GaP graph in simulation is open source:
+[**agentic-self-learning**](https://github.com/graph-robots/agentic-self-learning).
+A coding agent writes a graph policy, runs it on RoboSimStudio tasks, reads
+structured simulation feedback, and rewrites it. Paper:
+[*A Controlled Study of Models, Skills, Feedback, and Curriculum in Agentic
+Robotics*](https://arxiv.org/abs/2611.09030) ·
+[project page](https://graph-robots.github.io/agentic-self-learning/).
+:::
+
 **The graph is the policy.** GaP is a multi-agent coding harness that compiles
 a natural-language task into a typed, verified computation graph of modular
 skills, self-improves it in simulation, and runs the graph — not a black-box
